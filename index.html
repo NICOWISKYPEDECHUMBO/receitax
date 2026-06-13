@@ -131,6 +131,27 @@
   .enc-note{font-family:'Space Mono',monospace;font-size:.82rem;color:var(--ink-soft);background:#FCF6EC;border:1px solid var(--line);border-radius:10px;padding:10px 12px;line-height:1.5}
   @media(max-width:680px){.enc-rows{grid-template-columns:1fr}}
 
+  .cmp-item{background:#FCF6EC;border:1px solid #F2E5D2;border-radius:13px;padding:13px 14px;margin-bottom:9px}
+  .cmp-top{display:flex;align-items:center;gap:8px}
+  .cmp-name{font-weight:700;font-size:1rem}
+  .cmp-info{display:block;color:var(--ink-soft);font-size:.85rem;margin:4px 0 11px}
+  .cmp-info b{color:var(--tomato-dark);font-family:'Space Mono',monospace}
+  .cmp-ctrl{display:flex;gap:10px;flex-wrap:wrap}
+  .cmp-f{flex:1 1 130px}
+  .cmp-f>span{display:block;font-size:.68rem;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px}
+  .cmp-f input{width:100%;text-align:center}
+  .ok-box{background:#E9F5EE;border:1.5px solid #BBE0CC;color:#2C6A45;border-radius:12px;padding:13px 15px;font-size:.92rem;font-weight:600;line-height:1.5}
+  .warn-box{background:#FCEDE6;border:1.5px solid #F2C3AE;color:#B23A12;border-radius:12px;padding:13px 15px;font-size:.92rem;font-weight:600;line-height:1.55}
+  .ok-box b,.warn-box b{font-family:'Space Mono',monospace}
+  .cmp-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:2px}
+  .cmp-actions input{flex:1 1 90px;min-width:70px;text-align:center}
+  .cmp-actions select{flex:0 0 54px;text-align:center}
+  .mini-btn{border:none;border-radius:10px;padding:10px 12px;font-family:'DM Sans';font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;transition:.15s}
+  .mini-btn.add{background:#E9F5EE;color:#2C6A45;border:1.5px solid #BBE0CC}
+  .mini-btn.add:hover{background:#2C6A45;color:#fff}
+  .mini-btn.sub{background:#FCEDE6;color:#B23A12;border:1.5px solid #F2C3AE}
+  .mini-btn.sub:hover{background:#B23A12;color:#fff}
+
   @media (max-width:680px){
     .cost-grid,.grid3{grid-template-columns:1fr}
     .ing-labels{display:none}
@@ -280,6 +301,12 @@
   <section class="card" id="compra" style="margin-top:20px">
     <div class="card-head"><h2><span class="num">🛒</span>Rendimento da compra</h2>
       <span class="hint">Comprando os ingredientes em pacotes inteiros (1kg de maizena etc.), quantas receitas, potes e quanto rende.</span></div>
+    <div class="grid3" style="margin-bottom:6px">
+      <div><label for="cmp-want-potes">Quero fazer (potes)</label><input id="cmp-want-potes" type="text" inputmode="decimal" placeholder="Ex: 10"></div>
+      <div><label for="cmp-want-bisc">Biscoitos por pote</label><input id="cmp-want-bisc" type="text" inputmode="decimal" placeholder="Ex: 20"></div>
+      <div style="display:flex;align-items:flex-end"><span class="hint" style="font-size:.78rem">Os potes variam? Estime aqui quantos quer e o tamanho — o estoque diz se dá pra fechar o pedido.</span></div>
+    </div>
+    <div id="cmp-want-out" style="margin-bottom:14px"></div>
     <div id="compra-body"></div>
   </section>
 
@@ -300,6 +327,20 @@
   <footer>Medidas de colher/xícara são aproximadas (tabela caseira). Os valores ficam salvos só no seu navegador.</footer>
 </div>
 
+<div id="jsonModal" style="display:none;position:fixed;inset:0;background:rgba(51,35,27,.55);z-index:60;align-items:center;justify-content:center;padding:18px">
+  <div style="background:#fff;border-radius:16px;max-width:540px;width:100%;padding:20px;box-shadow:var(--shadow);max-height:90vh;overflow:auto">
+    <h3 id="jsonModalTitle" style="font-family:'Fraunces',serif;font-size:1.25rem;margin-bottom:6px">Backup JSON</h3>
+    <p id="jsonModalMsg" style="font-size:.85rem;color:var(--ink-soft);margin-bottom:10px"></p>
+    <textarea id="jsonText" spellcheck="false" style="width:100%;height:210px;font-family:'Space Mono',monospace;font-size:.78rem;border:1.5px solid var(--line);border-radius:11px;padding:10px;resize:vertical;color:var(--ink);background:#FFFDFA"></textarea>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn" id="jsonCopy">Copiar tudo</button>
+      <button class="btn" id="jsonDoImport" style="display:none">Importar</button>
+      <button class="btn ghost" id="jsonFile" style="display:none">Carregar arquivo</button>
+      <button class="btn ghost" id="jsonClose">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const BRL = n => 'R$ ' + (isFinite(n)?n:0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const NUMfmt = n => (isFinite(n)?n:0).toLocaleString('pt-BR',{maximumFractionDigits:2});
@@ -312,7 +353,11 @@ const num = v => { let s=String(v).trim().replace(/\s/g,''); if(s.includes(','))
 const $ = id => document.getElementById(id);
 const rows = $('rows');
 let compraPacotes = {};      // índice do ingrediente -> nº de pacotes em estoque
+let compraUsado = {};        // índice do ingrediente -> quantidade já usada
+let compraUsadoUnit = {};    // índice do ingrediente -> unidade do consumo (g/kg/ml/L/un/dz)
+let compraEstoque = {};      // índice do ingrediente -> saldo atual em unidade base
 let lastIngList = [], lastCtx = {}, compraSig = '';
+const baseUnitLabel = g => g==='massa'?'g':g==='volume'?'ml':'un';
 const norm = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 
 const COMPRA = { g:{g:'massa',f:1}, kg:{g:'massa',f:1000}, ml:{g:'volume',f:1}, L:{g:'volume',f:1000}, un:{g:'contagem',f:1}, dz:{g:'contagem',f:12} };
@@ -551,12 +596,27 @@ function recalc(){
     : 'Preencha os ingredientes acima';
 }
 
-/* ---- RENDIMENTO DA COMPRA / ESTOQUE EDITÁVEL ---- */
+/* ---- RENDIMENTO DA COMPRA / ESTOQUE VIVO (saldo interativo) ---- */
+function estoqueDe(i,x){ return (compraEstoque[i]!=null) ? compraEstoque[i] : x.baseCompra; } // base units
+
+function aplicarEstoque(i, sign){
+  const x=lastIngList[i]; if(!x) return;
+  const amtInp=document.querySelector('.cmp-amt[data-i="'+i+'"]');
+  const unit=compraUsadoUnit[i] ?? baseUnitLabel(COMPRA[x.buyU].g);
+  const fat=COMPRA[unit]?COMPRA[unit].f:1;
+  const amt=num(amtInp?amtInp.value:0)*fat;
+  if(amt>0){
+    compraEstoque[i]=Math.max(0, estoqueDe(i,x) + sign*amt);
+    if(amtInp) amtInp.value='';
+  }
+  updateCompraNumbers();
+}
+
 function renderCompra(){
   const body=$('compra-body'); const ingList=lastIngList;
   const usaveis=ingList.filter(x=>x.baseUsada>0 && x.compativel && x.baseCompra>0);
   if(!(usaveis.length && lastCtx.totalRende>0)){
-    body.innerHTML=`<div class="readout">Preencha os ingredientes (comprado, pago e usado) e o rendimento da receita para ver quanto cada pacote rende.</div>`;
+    body.innerHTML=`<div class="readout">Preencha os ingredientes (comprado, pago e usado) e o rendimento da receita para ver o estoque.</div>`;
     compraSig=''; return;
   }
   const sig=ingList.map(x=>(x.name||'')+'|'+x.buyU).join('§')+'×'+ingList.length;
@@ -565,17 +625,24 @@ function renderCompra(){
     body.innerHTML=`<div id="compra-rows"></div><div id="compra-sum" style="margin-top:10px"></div>`;
     const rowsEl=$('compra-rows');
     ingList.forEach((x,i)=>{
-      const div=document.createElement('div'); div.className='scn';
-      div.innerHTML=`<div class="sl" style="flex:1">${x.name||'(ingrediente)'} <span class="tag" id="cmp-tag-${i}" style="display:none">limita</span><small id="cmp-info-${i}"></small></div>
-        <div style="display:flex;align-items:center;gap:7px;flex:0 0 auto">
-          <input class="cmp-pac" data-i="${i}" type="text" inputmode="decimal" value="${compraPacotes[i]??1}" aria-label="pacotes" style="width:58px;text-align:center;padding:9px 4px">
-          <span style="font-size:.72rem;color:var(--ink-soft);line-height:1.25;white-space:nowrap">pacote(s)<br>× ${BRL(x.paid)}</span>
-        </div>`;
+      const usable=x.baseUsada>0 && x.compativel && x.baseCompra>0;
+      const grp=usable?COMPRA[x.buyU].g:'';
+      const unitOpts = grp==='massa'?['g','kg']:grp==='volume'?['ml','L']:['un','dz'];
+      const defU = compraUsadoUnit[i] ?? unitOpts[0];
+      const div=document.createElement('div'); div.className='cmp-item';
+      div.innerHTML=`<div class="cmp-top"><span class="cmp-name">${x.name||'(ingrediente)'}</span><span class="tag" id="cmp-tag-${i}" style="display:none">limita</span></div>
+        <small class="cmp-info" id="cmp-info-${i}"></small>`+
+        (usable?`<div class="cmp-actions">
+          <input class="cmp-amt" data-i="${i}" type="text" inputmode="decimal" placeholder="quantidade">
+          <select class="cmp-amt-u" data-i="${i}">${unitOpts.map(o=>`<option value="${o}"${o===defU?' selected':''}>${o}</option>`).join('')}</select>
+          <button class="mini-btn add" data-i="${i}">+ comprei</button>
+          <button class="mini-btn sub" data-i="${i}">− usei</button>
+        </div>`:'');
       rowsEl.appendChild(div);
     });
-    rowsEl.querySelectorAll('.cmp-pac').forEach(inp=>{
-      inp.addEventListener('input',()=>{ compraPacotes[inp.dataset.i]=inp.value; updateCompraNumbers(); });
-    });
+    rowsEl.querySelectorAll('.cmp-amt-u').forEach(sel=>sel.addEventListener('input',()=>{compraUsadoUnit[sel.dataset.i]=sel.value;}));
+    rowsEl.querySelectorAll('.mini-btn.add').forEach(b=>b.addEventListener('click',()=>aplicarEstoque(b.dataset.i,+1)));
+    rowsEl.querySelectorAll('.mini-btn.sub').forEach(b=>b.addEventListener('click',()=>aplicarEstoque(b.dataset.i,-1)));
   }
   updateCompraNumbers();
 }
@@ -586,38 +653,63 @@ function updateCompraNumbers(){
   let minRec=Infinity, limIdx=-1, limNome='';
   ingList.forEach((x,i)=>{
     if(x.baseUsada>0 && x.compativel && x.baseCompra>0){
-      const pac=num(compraPacotes[i]??1);
-      const rec=(pac*x.baseCompra)/x.baseUsada;
+      const rec=estoqueDe(i,x)/x.baseUsada;
       if(rec<minRec){ minRec=rec; limIdx=i; limNome=x.name||'(ingrediente)'; }
     }
   });
-  const maxReceitas = isFinite(minRec)?Math.floor(minRec):0;
+  const maxReceitas=isFinite(minRec)?Math.floor(minRec):0;
+  let valorEstoque=0;
   ingList.forEach((x,i)=>{
     const info=$('cmp-info-'+i), tag=$('cmp-tag-'+i); if(!info) return;
     if(x.baseUsada>0 && x.compativel && x.baseCompra>0){
-      const pac=num(compraPacotes[i]??1), grupo=COMPRA[x.buyU].g;
-      const estoque=pac*x.baseCompra, rec=estoque/x.baseUsada;
-      const sobraIng=Math.max(0, estoque - maxReceitas*x.baseUsada);
-      info.innerHTML=` rende ${NUMfmt(+rec.toFixed(1))} receita(s)${potesPorRec?` ≈ ${NUMfmt(Math.floor(rec*potesPorRec))} potes`:''} · estoque ${fmtBase(estoque,grupo)} · sobra <b>${fmtBase(sobraIng,grupo)}</b>`;
+      const grupo=COMPRA[x.buyU].g;
+      const atual=estoqueDe(i,x);
+      const rec=atual/x.baseUsada;
+      valorEstoque += atual*(x.paid/x.baseCompra);
+      info.innerHTML=`tenho <b>${fmtBase(atual,grupo)}</b> · dá p/ <b>${NUMfmt(+rec.toFixed(1))}</b> receita(s)${potesPorRec?` ≈ ${NUMfmt(Math.floor(rec*potesPorRec))} potes`:''}`;
       if(tag) tag.style.display=(i===limIdx)?'inline-block':'none';
     } else {
-      info.textContent = x.compativel?' sem quantidade usada':' medida incompatível';
+      info.textContent = x.compativel?'sem quantidade usada na receita':'medida incompatível';
       if(tag) tag.style.display='none';
     }
   });
   const biscProd=maxReceitas*totalRende;
   const potesC=cadaPote>0?Math.floor(biscProd/cadaPote):0;
-  const custoPacotes=ingList.reduce((s,x,i)=>s+num(compraPacotes[i]??1)*x.paid,0);
-  const fatur=potesC*headPote, lucroCompra=fatur-custoPacotes;
+  const fatur=potesC*headPote;
   const sum=$('compra-sum'); if(!sum) return;
   sum.innerHTML=
-    `<div class="enc-big"><span>Com o seu estoque você faz<br>${NUMfmt(maxReceitas)} receita(s) completa(s)</span><b>${NUMfmt(potesC)} potes</b></div>
+    `<div class="enc-big"><span>Com o estoque atual você faz<br>${NUMfmt(maxReceitas)} receita(s) completas</span><b>${NUMfmt(potesC)} potes</b></div>
      <div class="enc-rows">
-       <div><small>Custo da compra</small><b>${BRL(custoPacotes)}</b></div>
-       <div><small>Faturamento</small><b>${BRL(fatur)}</b></div>
-       <div><small>Lucro</small><b>${BRL(lucroCompra)}</b></div>
+       <div><small>Rende (${unit})</small><b>${NUMfmt(biscProd)}</b></div>
+       <div><small>Rende em potes</small><b>${NUMfmt(potesC)}</b></div>
+       <div><small>Valor em estoque</small><b>${BRL(valorEstoque)}</b></div>
      </div>
-     <div class="enc-note">Limitado por <b>${limNome}</b> · ${NUMfmt(maxReceitas)} receita(s) → ${NUMfmt(biscProd)} ${unit} → ${NUMfmt(potesC)} potes · vendendo a ${BRL(headPote)}/pote · edite os pacotes pra simular sua compra</div>`;
+     <div class="enc-note">${NUMfmt(maxReceitas)} receita(s) → <b>${NUMfmt(biscProd)} ${unit}</b> → <b>${NUMfmt(potesC)} potes</b> · faturamento ${BRL(fatur)} vendendo a ${BRL(headPote)}/pote · limitado por <b>${limNome}</b> · use + comprei / − usei pra atualizar o saldo</div>`;
+
+  // SIMULAR PEDIDO — quero X potes com Y biscoitos, o estoque dá?
+  const wantOut=$('cmp-want-out'); if(!wantOut) return;
+  const wantPotes=num($('cmp-want-potes').value), wantBisc=num($('cmp-want-bisc').value);
+  if(wantPotes>0 && wantBisc>0 && totalRende>0){
+    const biscNeeded=wantPotes*wantBisc;
+    const recipesNeeded=Math.ceil(biscNeeded/totalRende);
+    const falta=[];
+    ingList.forEach((x,i)=>{
+      if(x.baseUsada>0 && x.compativel && x.baseCompra>0){
+        const grupo=COMPRA[x.buyU].g;
+        const disp=estoqueDe(i,x);
+        const prec=recipesNeeded*x.baseUsada;
+        if(disp<prec-0.001) falta.push({nome:x.name||'(ingrediente)', faltam:prec-disp, grupo, tamPac:x.baseCompra});
+      }
+    });
+    if(falta.length===0){
+      wantOut.innerHTML=`<div class="ok-box">✅ Dá pra fazer! <b>${NUMfmt(wantPotes)}</b> potes × <b>${NUMfmt(wantBisc)}</b> = <b>${NUMfmt(biscNeeded)}</b> biscoitos · precisa de <b>${NUMfmt(recipesNeeded)}</b> receita(s) e seu estoque cobre.</div>`;
+    } else {
+      const lista=falta.map(f=>`${f.nome}: faltam <b>${fmtBase(f.faltam,f.grupo)}</b>${f.tamPac>0?` (~${NUMfmt(Math.ceil(f.faltam/f.tamPac))} pacote(s))`:''}`).join(' · ');
+      wantOut.innerHTML=`<div class="warn-box">⚠️ Falta estoque pra <b>${NUMfmt(wantPotes)}</b> potes × <b>${NUMfmt(wantBisc)}</b> (${NUMfmt(biscNeeded)} biscoitos · ${NUMfmt(recipesNeeded)} receitas):<br>${lista}</div>`;
+    }
+  } else {
+    wantOut.innerHTML='';
+  }
 }
 
 /* SALVAR */
@@ -629,7 +721,8 @@ function snapshot(){
     pack:{total:$('p-total').value, cada:$('p-cada').value, unit:$('p-unit').value, emb:$('p-emb').value, sobra:$('p-sobra').value},
     ops:{gas:$('c-gas').value,luz:$('c-luz').value,out:$('c-out').value,serv:$('c-serv').value,lucro:$('c-lucro').value},
     enc:{potes:$('enc-potes').value, bisc:$('enc-bisc').value, lucro:$('enc-lucro').value},
-    compraPacotes:{...compraPacotes},
+    compraEstoque:{...compraEstoque}, compraUsadoUnit:{...compraUsadoUnit},
+    want:{potes:$('cmp-want-potes').value, bisc:$('cmp-want-bisc').value},
     ings:[...rows.querySelectorAll('.ing-row')].map(r=>({
       name:r.querySelector('.f-name').value, buy:r.querySelector('.f-buy').value, buyU:r.querySelector('.f-buyU').value,
       paid:r.querySelector('.f-paid').value, use:r.querySelector('.f-use').value, useM:r.querySelector('.f-useM').value }))};
@@ -640,7 +733,8 @@ function loadSnapshot(s){
   const o=s.ops||{}; $('c-gas').value=o.gas||''; $('c-luz').value=o.luz||''; $('c-out').value=o.out||'';
   $('c-serv').value=o.serv||''; $('c-lucro').value=o.lucro||'';
   const e=s.enc||{}; $('enc-potes').value=e.potes||''; $('enc-bisc').value=e.bisc||''; $('enc-lucro').value=e.lucro||'';
-  compraPacotes = s.compraPacotes ? {...s.compraPacotes} : {}; compraSig='';
+  compraEstoque = s.compraEstoque ? {...s.compraEstoque} : {}; compraUsadoUnit = s.compraUsadoUnit ? {...s.compraUsadoUnit} : {}; compraSig='';
+  const w=s.want||{}; $('cmp-want-potes').value=w.potes||''; $('cmp-want-bisc').value=w.bisc||'';
   rows.innerHTML=''; (s.ings&&s.ings.length?s.ings:[{}]).forEach(addRow); recalc();
 }
 function renderSaved(){
@@ -655,41 +749,62 @@ function renderSaved(){
     list.appendChild(c);
   });
 }
+let lsOK=true; try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); }catch(e){ lsOK=false; }
 $('saveBtn').onclick=()=>{ const name=$('saveName').value.trim()||$('rname').value.trim();
-  if(!name){ alert('Dê um nome para salvar a receita.'); return; } store[name]=snapshot(); persist(); renderSaved(); $('saveName').value=name; };
+  if(!name){ alert('Dê um nome para salvar a receita.'); return; }
+  store[name]=snapshot(); persist(); renderSaved(); $('saveName').value=name;
+  alert(lsOK ? `Receita "${name}" salva! ✅` : `Receita "${name}" salva nesta sessão. A pré-visualização do chat não grava de forma permanente — pra guardar de vez, use o site hospedado (Vercel) ou o botão "Baixar JSON".`);
+};
 $('clearBtn').onclick=()=>{ if(!confirm('Limpar todos os campos? (suas receitas salvas continuam)')) return; loadSnapshot({ings:[{}]}); $('saveName').value=''; };
 
 function baixarArquivo(texto, nome){
-  const blob=new Blob([texto],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download=nome; document.body.appendChild(a); a.click();
-  a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  try{
+    const blob=new Blob([texto],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=nome; document.body.appendChild(a); a.click();
+    a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }catch(e){}
 }
+function abrirModal(o){
+  $('jsonModalTitle').textContent=o.title; $('jsonModalMsg').textContent=o.msg;
+  $('jsonText').value=o.text||''; $('jsonText').readOnly=!o.importMode;
+  $('jsonCopy').style.display=o.importMode?'none':''; $('jsonCopy').textContent='Copiar tudo';
+  $('jsonDoImport').style.display=o.importMode?'':'none'; $('jsonFile').style.display=o.importMode?'':'none';
+  $('jsonModal').style.display='flex';
+}
+$('jsonClose').onclick=()=>$('jsonModal').style.display='none';
+$('jsonModal').onclick=e=>{ if(e.target.id==='jsonModal') $('jsonModal').style.display='none'; };
+$('jsonCopy').onclick=()=>{ const t=$('jsonText'); t.select(); t.setSelectionRange(0,99999);
+  try{ document.execCommand('copy'); }catch(e){}
+  try{ if(navigator.clipboard) navigator.clipboard.writeText(t.value); }catch(e){}
+  $('jsonCopy').textContent='Copiado! ✅'; setTimeout(()=>$('jsonCopy').textContent='Copiar tudo',1500); };
+function importarTexto(txt){
+  try{ const data=JSON.parse(txt);
+    if(data && typeof data==='object' && !Array.isArray(data)){
+      Object.assign(store,data); persist(); renderSaved();
+      alert(Object.keys(data).length+' receita(s) importada(s)! ✅'); $('jsonModal').style.display='none';
+    } else alert('JSON inválido.');
+  }catch(e){ alert('Não consegui ler. Verifique se colou um JSON válido.'); }
+}
+$('jsonDoImport').onclick=()=>importarTexto($('jsonText').value);
+$('jsonFile').onclick=()=>$('importFile').click();
+
 $('exportBtn').onclick=()=>{
   let data={...store};
-  // se nada salvo ainda, exporta a receita atual
   if(Object.keys(data).length===0){ data[$('rname').value.trim()||'Receita']=snapshot(); }
-  baixarArquivo(JSON.stringify(data,null,2), 'minhas-receitas.json');
+  const txt=JSON.stringify(data,null,2);
+  baixarArquivo(txt,'minhas-receitas.json');
+  abrirModal({title:'Backup JSON',msg:'Tentei baixar o arquivo. Se o download não abrir (acontece na pré-visualização do chat), copie o texto abaixo e guarde — funciona normal no site hospedado.',text:txt,importMode:false});
 };
-$('importBtn').onclick=()=>$('importFile').click();
+$('importBtn').onclick=()=>abrirModal({title:'Importar receitas',msg:'Cole aqui o conteúdo do seu backup .json e toque em Importar. Ou use "Carregar arquivo".',text:'',importMode:true});
 $('importFile').onchange=ev=>{
-  const file=ev.target.files[0]; if(!file) return;
+  const file=ev.target.files[0]; if(!file){ return; }
   const reader=new FileReader();
-  reader.onload=()=>{
-    try{
-      const data=JSON.parse(reader.result);
-      if(data && typeof data==='object' && !Array.isArray(data)){
-        const n=Object.keys(data).length;
-        Object.assign(store,data); persist(); renderSaved();
-        alert(n+' receita(s) importada(s) com sucesso!');
-      } else alert('Arquivo JSON inválido.');
-    }catch(e){ alert('Não consegui ler o arquivo. Verifique se é um JSON válido.'); }
-    ev.target.value='';
-  };
+  reader.onload=()=>{ importarTexto(reader.result); ev.target.value=''; };
   reader.readAsText(file);
 };
 $('addRow').onclick=()=>{ addRow(); };
-['rname','p-total','p-cada','p-unit','p-emb','p-sobra','c-gas','c-luz','c-out','c-serv','c-lucro','enc-potes','enc-bisc','enc-lucro'].forEach(id=>$(id).addEventListener('input',recalc));
+['rname','p-total','p-cada','p-unit','p-emb','p-sobra','c-gas','c-luz','c-out','c-serv','c-lucro','enc-potes','enc-bisc','enc-lucro','cmp-want-potes','cmp-want-bisc'].forEach(id=>$(id).addEventListener('input',recalc));
 
 /* exemplo demonstrando rendimento + sobra + medidas */
 addRow({name:'Farinha de trigo', buy:1, buyU:'kg', paid:6, use:3, useM:'xic'});
