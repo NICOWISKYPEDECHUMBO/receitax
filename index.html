@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Precifica · Custo de Receitas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FBF1E3; --bg-warm:#F6E6CF; --card:#FFFFFF;
+    --ink:#33231B; --ink-soft:#7A6453; --line:#EAD9C2;
+    --tomato:#E2552B; --tomato-dark:#C0431E; --basil:#3C7A56;
+    --honey:#E0A024; --shadow:0 14px 40px -18px rgba(81,46,22,.45); --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:'DM Sans',system-ui,sans-serif;
+    background:radial-gradient(circle at 12% -5%, #FCE7C8 0%, transparent 45%),radial-gradient(circle at 95% 8%, #F7DDC6 0%, transparent 40%),var(--bg);
+    color:var(--ink);min-height:100vh;line-height:1.5;padding:0 16px 80px}
+  .wrap{max-width:900px;margin:0 auto}
+
+  header{padding:38px 0 26px;text-align:center}
+  .brand{display:inline-flex;align-items:center;gap:11px;background:var(--ink);color:#FBF1E3;padding:8px 16px 8px 12px;border-radius:100px;font-weight:600;font-size:.82rem;letter-spacing:.04em;box-shadow:var(--shadow)}
+  .brand .dot{width:11px;height:11px;border-radius:50%;background:var(--tomato);box-shadow:0 0 0 4px rgba(226,85,43,.25)}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(2.3rem,7vw,3.6rem);line-height:1.02;margin:18px 0 6px;letter-spacing:-.02em}
+  h1 em{font-style:italic;color:var(--tomato)}
+  .sub{color:var(--ink-soft);max-width:470px;margin:0 auto;font-size:1rem}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:20px}
+  .card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .card-head h2{font-family:'Fraunces',serif;font-weight:600;font-size:1.35rem;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+  .num{font-family:'Space Mono',monospace;font-size:.8rem;font-weight:700;background:var(--bg-warm);color:var(--tomato-dark);width:30px;height:30px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center}
+  .hint{font-size:.85rem;color:var(--ink-soft);max-width:380px}
+
+  label{display:block;font-size:.78rem;font-weight:600;color:var(--ink-soft);margin-bottom:5px;letter-spacing:.01em}
+  input,select{width:100%;font-family:'DM Sans',sans-serif;font-size:1rem;color:var(--ink);background:#FFFDFA;border:1.5px solid var(--line);border-radius:11px;padding:11px 12px;transition:border-color .15s, box-shadow .15s}
+  select{cursor:pointer;padding:11px 8px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237A6453' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:24px}
+  input::placeholder{color:#C2AE97}
+  input:focus,select:focus{outline:none;border-color:var(--tomato);box-shadow:0 0 0 3px rgba(226,85,43,.14)}
+  input[type=number]{appearance:textfield}
+  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+  /* INGREDIENT ROWS */
+  .ing-labels{display:grid;grid-template-columns:1.5fr 1.6fr .9fr 1.6fr auto auto;gap:10px;padding:0 4px 8px;font-size:.72rem;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+  .ing-labels span:nth-child(5){text-align:right}
+  .ing-row{display:grid;grid-template-columns:1.5fr 1.6fr .9fr 1.6fr auto auto;gap:10px;align-items:center;padding:9px;border-radius:13px;margin-bottom:8px;background:#FCF6EC;border:1px solid #F2E5D2}
+  .qty-row{display:flex;gap:6px;flex-wrap:wrap}
+  .qty-row input{flex:1 1 72px;min-width:72px}
+  .qty-row select{width:auto;flex:0 0 58px}
+  .qty-row.use select{flex:1 0 138px}
+  .cost{font-family:'Space Mono',monospace;font-weight:700;font-size:.98rem;color:var(--basil);text-align:right;white-space:nowrap;padding-right:2px;min-width:74px}
+  .cost.bad{color:var(--tomato);cursor:help}
+  .del{border:none;background:transparent;color:#CBB6A0;cursor:pointer;font-size:1.2rem;line-height:1;padding:6px 8px;border-radius:8px;transition:.15s}
+  .del:hover{background:#F8E0D7;color:var(--tomato)}
+  .add-btn{width:100%;margin-top:6px;background:#FFF7EE;color:var(--tomato-dark);border:1.5px dashed var(--tomato);border-radius:12px;padding:12px;font-family:'DM Sans';font-weight:700;font-size:.95rem;cursor:pointer;transition:.15s}
+  .add-btn:hover{background:var(--tomato);color:#fff;border-style:solid}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .cost-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .field-icon{position:relative}
+  .field-icon .pre{position:absolute;left:12px;top:34px;color:var(--ink-soft);font-size:.95rem;pointer-events:none;font-weight:600}
+  .field-icon input{padding-left:30px}
+  .field-icon.pct input{padding-left:12px;padding-right:30px}
+  .field-icon.pct .pre{left:auto;right:12px}
+  .readout{margin-top:14px;background:var(--bg-warm);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Space Mono',monospace;font-size:.9rem;color:var(--ink);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .readout b{color:var(--tomato-dark)}
+
+  /* RECEIPT */
+  .receipt{background:linear-gradient(180deg,#33231B,#3F2A20);color:#FBF1E3;border-radius:var(--radius);box-shadow:var(--shadow);padding:26px 24px 0;position:relative;overflow:hidden}
+  .receipt::before{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;background:radial-gradient(circle at 85% 0%, rgba(224,160,36,.22), transparent 50%)}
+  .receipt h2{font-family:'Fraunces',serif;font-weight:600;font-size:1.4rem;margin-bottom:4px;position:relative}
+  .receipt .rsub{color:#D9C4B0;font-size:.85rem;margin-bottom:18px;position:relative}
+  .line-item{display:flex;justify-content:space-between;align-items:baseline;font-size:.95rem;padding:9px 0;border-bottom:1px dashed rgba(255,241,227,.16);position:relative}
+  .line-item .lbl{color:#E8D8C7;display:flex;gap:7px;align-items:baseline;flex-wrap:wrap}
+  .line-item .val{font-family:'Space Mono',monospace;font-weight:700;white-space:nowrap}
+  .line-item .lbl em{font-style:normal;color:#B89C82;font-size:.8em;font-family:'Space Mono',monospace}
+  .line-item.total{border-top:2px solid rgba(255,241,227,.3);border-bottom:none;margin-top:4px;padding-top:13px}
+  .line-item.total .lbl{color:#FBF1E3;font-weight:700}
+  .line-item.total .val{font-size:1.05rem}
+  .line-item.sub .lbl{color:#BFA88F;font-size:.86rem}
+  .line-item.sub .val{color:#BFA88F;font-size:.86rem;font-weight:400}
+  .line-item.add .val{color:var(--honey)}
+  .line-item.add .lbl em{color:rgba(224,160,36,.75)}
+
+  .final{margin:10px -24px 0;padding:22px 24px 26px;position:relative;background:linear-gradient(180deg,#E2552B,#C0431E);border-top:3px dotted rgba(255,255,255,.4)}
+  .final .zig{position:absolute;left:0;right:0;bottom:-11px;height:12px;background:radial-gradient(circle at 6px -2px, transparent 6px, #C0431E 7px) repeat-x;background-size:14px 14px}
+  .final-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .jarwrap{flex:0 0 156px;max-width:170px}
+  .jarsvg{width:100%;height:auto;display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.18))}
+  .final-info{flex:1;min-width:180px}
+  .final-info .per{margin-top:0;margin-bottom:12px}
+  .final-info .profit{margin-top:0}
+  .final .ftag{font-size:.82rem;font-weight:600;letter-spacing:.03em;color:#FFE6D9;text-transform:uppercase}
+  .final .price{font-family:'Fraunces',serif;font-weight:700;font-size:clamp(2.3rem,9vw,3.2rem);line-height:.95;color:#fff;letter-spacing:-.02em;white-space:nowrap}
+  .final .per{font-size:.85rem;color:#FFE0D2;margin-top:8px;font-family:'Space Mono',monospace;line-height:1.5}
+  .profit{display:inline-flex;align-items:center;gap:7px;margin-top:14px;background:rgba(255,255,255,.18);padding:6px 13px;border-radius:100px;font-size:.85rem;font-weight:600;color:#fff}
+  .profit b{font-family:'Space Mono',monospace}
+
+  .savebar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .savebar .grow{flex:1;min-width:160px}
+  .btn{font-family:'DM Sans';font-weight:700;font-size:.92rem;cursor:pointer;padding:11px 18px;border-radius:11px;border:1.5px solid var(--ink);background:var(--ink);color:#FBF1E3;transition:.15s;width:auto}
+  .btn:hover{background:#221710}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn.ghost:hover{background:var(--bg-warm)}
+  .saved-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--bg-warm);border:1px solid var(--line);border-radius:100px;padding:6px 8px 6px 14px;font-size:.85rem;font-weight:600}
+  .chip button{border:none;background:transparent;cursor:pointer;color:var(--ink-soft);font-size:1rem;line-height:1;padding:2px 5px;border-radius:50%;width:auto}
+  .chip button:hover{background:#F0D9C8;color:var(--tomato)}
+  .chip .load{cursor:pointer;color:var(--tomato-dark)}
+  .empty-note{font-size:.85rem;color:var(--ink-soft);font-style:italic}
+  footer{text-align:center;color:var(--ink-soft);font-size:.8rem;padding:30px 0 0}
+
+  .scn{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--line);border-radius:13px;margin-bottom:9px;background:#FCF6EC;transition:.15s}
+  .scn.sel{border-color:var(--tomato);background:#FFF1E8;box-shadow:0 0 0 3px rgba(226,85,43,.12)}
+  .scn .sl{font-weight:700;font-size:.95rem;display:flex;flex-direction:column;gap:2px}
+  .scn .sl small{color:var(--ink-soft);font-weight:400;font-size:.8rem}
+  .scn .sv{text-align:right;font-family:'Space Mono',monospace;font-weight:700;font-size:1.02rem;color:var(--basil);white-space:nowrap}
+  .scn .sv small{display:block;color:var(--ink-soft);font-weight:400;font-size:.76rem;margin-top:2px}
+  .scn.sel .sv{color:var(--tomato-dark)}
+  .scn .tag{display:inline-block;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--tomato);border-radius:6px;padding:1px 6px;margin-left:7px;vertical-align:middle}
+
+  .enc-big{display:flex;justify-content:space-between;align-items:center;gap:10px;background:linear-gradient(180deg,#33231B,#3F2A20);color:#FBF1E3;border-radius:14px;padding:16px 18px;margin-bottom:10px}
+  .enc-big span{font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;color:#D9C4B0;font-weight:600;line-height:1.35}
+  .enc-big b{font-family:'Fraunces',serif;font-size:1.9rem;color:#fff;white-space:nowrap}
+  .enc-rows{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+  .enc-rows>div{background:var(--bg-warm);border:1px solid var(--line);border-radius:12px;padding:11px 12px;text-align:center}
+  .enc-rows small{display:block;font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;font-weight:600}
+  .enc-rows b{font-family:'Space Mono',monospace;font-size:1.05rem;color:var(--tomato-dark)}
+  .enc-note{font-family:'Space Mono',monospace;font-size:.82rem;color:var(--ink-soft);background:#FCF6EC;border:1px solid var(--line);border-radius:10px;padding:10px 12px;line-height:1.5}
+  @media(max-width:680px){.enc-rows{grid-template-columns:1fr}}
+
+  @media (max-width:680px){
+    .cost-grid,.grid3{grid-template-columns:1fr}
+    .ing-labels{display:none}
+    .ing-row{grid-template-columns:1fr 1fr;gap:9px;position:relative;padding:13px;padding-top:34px}
+    .ing-row .iname,.ing-row .cell-buy,.ing-row .cell-use,.ing-row .cost{grid-column:1/-1}
+    .ing-row .cost{text-align:left;font-size:1.05rem;border-top:1px dashed #ECDCC8;padding-top:8px}
+    .ing-row .del{position:absolute;top:6px;right:6px}
+    .qty-row input{flex:1 1 100%;min-width:0}
+    .qty-row select{flex:1 1 100%}
+    .m-tag{display:block;font-size:.66rem;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
+  }
+  @media (min-width:681px){ .m-tag{display:none} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand"><span class="dot"></span>PRECIFICA · custo de receitas</div>
+    <h1>Quanto custa <em>fazer</em>, quanto cobrar pra <em>lucrar</em>.</h1>
+    <p class="sub">Calcule o custo dos ingredientes, some gás, luz e embalagem, e descubra o preço de venda por pote.</p>
+  </header>
+
+  <!-- 01 RECEITA -->
+  <section class="card">
+    <div class="card-head"><h2><span class="num">01</span>Sua receita</h2></div>
+    <div><label for="rname">Nome da receita</label><input id="rname" type="text" placeholder="Ex: Biscoito amanteigado no pote"></div>
+  </section>
+
+  <!-- 02 INGREDIENTES -->
+  <section class="card">
+    <div class="card-head">
+      <h2><span class="num">02</span>Ingredientes</h2>
+      <span class="hint">Escolha a unidade que <b>comprou</b> e a medida que <b>usou</b>. Dá pra escolher colher <b>rasa</b> ou <b>cheia</b> (cheia ≈ o dobro).</span>
+    </div>
+    <div class="ing-labels"><span>Ingrediente</span><span>Comprei</span><span>Pago R$</span><span>Usei</span><span>Custo</span><span></span></div>
+    <div id="rows"></div>
+    <button class="add-btn" id="addRow">+ Adicionar ingrediente</button>
+  </section>
+
+  <!-- 03 EMBALAGEM / POTES -->
+  <section class="card">
+    <div class="card-head">
+      <h2><span class="num">03</span>Embalagem &amp; rendimento</h2>
+      <span class="hint">Quantos potes a receita rende, quantos biscoitos em cada um e o preço da embalagem.</span>
+    </div>
+    <div class="grid3">
+      <div><label for="p-total">Rende no total</label>
+        <div class="qty-row"><input id="p-total" type="text" inputmode="decimal" placeholder="Ex: 72">
+        <select id="p-unit" style="flex:0 0 100px"><option value="biscoitos">biscoitos</option><option value="unidades">unidades</option><option value="g">g (peso)</option><option value="ml">ml</option><option value="fatias">fatias</option></select></div></div>
+      <div><label for="p-cada">Cada pote leva</label><input id="p-cada" type="text" inputmode="decimal" placeholder="Ex: 12"></div>
+      <div class="field-icon"><label for="p-emb">Valor de cada embalagem</label><span class="pre">R$</span><input id="p-emb" type="text" inputmode="decimal" placeholder="0,00"></div>
+    </div>
+    <div style="margin-top:14px"><label for="p-sobra">Quando sobrar, eu…</label>
+      <select id="p-sobra">
+        <option value="bonus">Dou a sobra de bônus (os potes cheios cobrem tudo)</option>
+        <option value="menor">Vendo um pote menor proporcional</option>
+        <option value="prejuizo">Conto como prejuízo (desconta do lucro)</option>
+      </select></div>
+    <div class="readout" id="emb-readout">Preencha o rendimento e quanto cada pote leva.</div>
+  </section>
+
+  <!-- 04 CUSTOS E LUCRO -->
+  <section class="card">
+    <div class="card-head">
+      <h2><span class="num">04</span>Custos e lucro</h2>
+      <span class="hint">Gás, luz, serviço e lucro em % · outros custos em R$. Gás e luz incidem sobre o valor dos ingredientes.</span>
+    </div>
+    <div class="cost-grid">
+      <div class="field-icon pct"><label for="c-gas">Gás</label><span class="pre">%</span><input id="c-gas" type="text" inputmode="decimal" placeholder="0"></div>
+      <div class="field-icon pct"><label for="c-luz">Luz / energia</label><span class="pre">%</span><input id="c-luz" type="text" inputmode="decimal" placeholder="0"></div>
+      <div class="field-icon"><label for="c-out">Outros custos</label><span class="pre">R$</span><input id="c-out" type="text" inputmode="decimal" placeholder="0,00"></div>
+      <div class="field-icon pct"><label for="c-serv">Taxa de serviço</label><span class="pre">%</span><input id="c-serv" type="text" inputmode="decimal" placeholder="0"></div>
+      <div class="field-icon pct"><label for="c-lucro">Margem de lucro</label><span class="pre">%</span><input id="c-lucro" type="text" inputmode="decimal" placeholder="0"></div>
+    </div>
+  </section>
+
+  <!-- 05 RESUMO -->
+  <section class="receipt">
+    <h2 id="r-title">Resumo do custo</h2>
+    <p class="rsub" id="r-sub">Preencha os ingredientes acima</p>
+    <div class="line-item"><span class="lbl">🧺 Ingredientes <em>(valor da receita)</em></span><span class="val" id="o-ing">R$ 0,00</span></div>
+    <div class="line-item"><span class="lbl">🔥 Gás <em id="o-gas-pct"></em></span><span class="val" id="o-gas">R$ 0,00</span></div>
+    <div class="line-item"><span class="lbl">💡 Luz <em id="o-luz-pct"></em></span><span class="val" id="o-luz">R$ 0,00</span></div>
+    <div class="line-item"><span class="lbl">📦 Embalagem <em id="o-emb-det"></em></span><span class="val" id="o-emb">R$ 0,00</span></div>
+    <div class="line-item"><span class="lbl">➕ Outros custos</span><span class="val" id="o-out">R$ 0,00</span></div>
+    <div class="line-item total"><span class="lbl">💰 Custo total da receita</span><span class="val" id="o-total">R$ 0,00</span></div>
+    <div class="line-item sub"><span class="lbl">↳ custo por pote <em id="o-cpote-det"></em></span><span class="val" id="o-cpote">R$ 0,00</span></div>
+    <div class="line-item add"><span class="lbl">＋ Taxa de serviço <em id="o-serv-pct"></em></span><span class="val" id="o-serv">R$ 0,00</span></div>
+    <div class="line-item add"><span class="lbl">＋ Margem de lucro <em id="o-lucro-pct"></em></span><span class="val" id="o-lucro">R$ 0,00</span></div>
+    <div class="final">
+      <div class="final-row">
+        <div class="jarwrap">
+          <svg viewBox="0 0 230 205" class="jarsvg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M106 52 Q142 58 160 80" fill="none" stroke="#FBE7D5" stroke-width="2.5"/>
+            <rect x="30" y="62" width="104" height="130" rx="22" fill="#FFF6EA" stroke="#FBE7D5" stroke-width="3"/>
+            <rect x="42" y="78" width="13" height="96" rx="6" fill="#FFFFFF" opacity=".5"/>
+            <rect x="26" y="42" width="112" height="26" rx="10" fill="#6E2A14"/>
+            <rect x="34" y="36" width="96" height="13" rx="6" fill="#8A371B"/>
+            <g fill="#CE9056" stroke="#A96E37" stroke-width="2">
+              <circle cx="58" cy="108" r="15"/><circle cx="96" cy="118" r="15"/>
+              <circle cx="70" cy="148" r="15"/><circle cx="104" cy="156" r="13"/>
+            </g>
+            <g fill="#5A3A1E">
+              <circle cx="54" cy="104" r="2"/><circle cx="62" cy="112" r="2"/>
+              <circle cx="93" cy="114" r="2"/><circle cx="101" cy="122" r="2"/>
+              <circle cx="66" cy="145" r="2"/><circle cx="75" cy="151" r="2"/><circle cx="105" cy="158" r="2"/>
+            </g>
+            <g transform="rotate(-9 178 104)">
+              <rect x="134" y="80" width="94" height="54" rx="10" fill="#FFF6EA" stroke="#6E2A14" stroke-width="2.5"/>
+              <circle cx="146" cy="92" r="4" fill="none" stroke="#6E2A14" stroke-width="2.5"/>
+              <text x="183" y="105" text-anchor="middle" font-family="Fraunces, serif" font-weight="700" font-size="19" fill="#C0431E" id="o-perpote">R$ 0,00</text>
+              <text x="183" y="122" text-anchor="middle" font-family="DM Sans, sans-serif" font-weight="700" font-size="8.5" letter-spacing="1" fill="#7A6453">POR POTE</text>
+            </g>
+          </svg>
+        </div>
+        <div class="final-info">
+          <div class="ftag">Cada pote, eu vendo por</div>
+          <div class="per" id="o-venda-line">—</div>
+          <div class="profit">Lucro estimado: <b id="o-profit">R$ 0,00</b></div>
+        </div>
+      </div>
+      <div class="zig"></div>
+    </div>
+  </section>
+
+  <!-- ENCOMENDA -->
+  <section class="card" id="encomenda" style="margin-top:20px">
+    <div class="card-head"><h2><span class="num">🧾</span>Calcular encomenda</h2>
+      <span class="hint">Te pediram um lote? Digite quantos potes e eu calculo o total a cobrar, por pote e por unidade.</span></div>
+    <div class="grid3">
+      <div><label for="enc-potes">Potes encomendados</label><input id="enc-potes" type="text" inputmode="decimal" placeholder="Ex: 100"></div>
+      <div><label for="enc-bisc">Biscoitos por pote</label><input id="enc-bisc" type="text" inputmode="decimal" placeholder="usa o da receita"></div>
+      <div class="field-icon pct"><label for="enc-lucro">Lucro desejado</label><span class="pre">%</span><input id="enc-lucro" type="text" inputmode="decimal" placeholder="usa o da receita"></div>
+    </div>
+    <div id="enc-out" style="margin-top:14px"></div>
+  </section>
+
+  <!-- CENÁRIOS DA SOBRA -->
+  <section class="card" id="cenarios" style="margin-top:20px">
+    <div class="card-head"><h2><span class="num">⚖️</span>Cenários da sobra</h2></div>
+    <div id="cenarios-body"></div>
+  </section>
+
+  <!-- RENDIMENTO DA COMPRA -->
+  <section class="card" id="compra" style="margin-top:20px">
+    <div class="card-head"><h2><span class="num">🛒</span>Rendimento da compra</h2>
+      <span class="hint">Comprando os ingredientes em pacotes inteiros (1kg de maizena etc.), quantas receitas, potes e quanto rende.</span></div>
+    <div id="compra-body"></div>
+  </section>
+
+  <!-- 06 SALVAR -->
+  <section class="card" style="margin-top:24px">
+    <div class="card-head"><h2><span class="num">05</span>Minhas receitas</h2></div>
+    <div class="savebar">
+      <input class="grow" id="saveName" type="text" placeholder="Nome para salvar esta receita">
+      <button class="btn" id="saveBtn">Salvar receita</button>
+      <button class="btn ghost" id="clearBtn">Limpar tudo</button>
+      <button class="btn ghost" id="exportBtn">⬇ Baixar JSON</button>
+      <button class="btn ghost" id="importBtn">⬆ Importar JSON</button>
+      <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+    </div>
+    <div class="saved-list" id="savedList"><span class="empty-note">Nenhuma receita salva ainda.</span></div>
+  </section>
+
+  <footer>Medidas de colher/xícara são aproximadas (tabela caseira). Os valores ficam salvos só no seu navegador.</footer>
+</div>
+
+<script>
+const BRL = n => 'R$ ' + (isFinite(n)?n:0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const NUMfmt = n => (isFinite(n)?n:0).toLocaleString('pt-BR',{maximumFractionDigits:2});
+function fmtBase(v, grupo){
+  if(grupo==='massa')  return v>=1000 ? NUMfmt(+(v/1000).toFixed(2))+' kg' : NUMfmt(+v.toFixed(0))+' g';
+  if(grupo==='volume') return v>=1000 ? NUMfmt(+(v/1000).toFixed(2))+' L'  : NUMfmt(+v.toFixed(0))+' ml';
+  return NUMfmt(+v.toFixed(2))+' un';
+}
+const num = v => { let s=String(v).trim().replace(/\s/g,''); if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.'); const n=parseFloat(s); return isFinite(n)?n:0; };
+const $ = id => document.getElementById(id);
+const rows = $('rows');
+let compraPacotes = {};      // índice do ingrediente -> nº de pacotes em estoque
+let lastIngList = [], lastCtx = {}, compraSig = '';
+const norm = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+
+const COMPRA = { g:{g:'massa',f:1}, kg:{g:'massa',f:1000}, ml:{g:'volume',f:1}, L:{g:'volume',f:1000}, un:{g:'contagem',f:1}, dz:{g:'contagem',f:12} };
+const SIMPLES = { g:{g:'massa',f:1}, ml:{g:'volume',f:1}, un:{g:'contagem',f:1} };
+const CASEIRA = ['cs','meiacs','csc','cc','ccc','xic','meiaxic','quartxic','pitada'];
+const CHEIA = 1.9; // colher cheia ≈ quase o dobro da rasa
+const DENS = {
+  // valores padrão das tabelas de medidas caseiras (colher de sopa rasa); 1 xícara = 16 colheres de sopa
+  'farinha':{cs:8,cc:2.5,xic:120,pitada:0.4}, 'trigo':{cs:8,cc:2.5,xic:120,pitada:0.4},
+  'amido':{cs:9,cc:3,xic:150,pitada:0.3}, 'maizena':{cs:9,cc:3,xic:150,pitada:0.3},
+  'polvilho':{cs:9,cc:3,xic:150,pitada:0.3}, 'fuba':{cs:8,cc:2.5,xic:120,pitada:0.3},
+  'acucar':{cs:12,cc:4,xic:180,pitada:0.5}, 'glacar':{cs:8,cc:2.5,xic:130,pitada:0.3},
+  'confeiteiro':{cs:8,cc:2.5,xic:130,pitada:0.3},
+  'manteiga':{cs:14,cc:4.5,xic:200,pitada:0.5}, 'margarina':{cs:14,cc:4.5,xic:200,pitada:0.5},
+  'cacau':{cs:6,cc:2,xic:90,pitada:0.3}, 'achocolatado':{cs:6,cc:2,xic:90,pitada:0.3},
+  'chocolate':{cs:6,cc:2,xic:90,pitada:0.3}, 'nescau':{cs:6,cc:2,xic:90,pitada:0.3},
+  'leite em po':{cs:8,cc:2.5,xic:120,pitada:0.3}, 'fermento':{cs:10,cc:3,xic:160,pitada:0.4},
+  'sal':{cs:18,cc:6,xic:300,pitada:0.5}, 'mel':{cs:18,cc:6,xic:300,pitada:0.6},
+  'aveia':{cs:6,cc:2,xic:90,pitada:0.3}, 'coco':{cs:5,cc:1.5,xic:80,pitada:0.3},
+  'arroz':{cs:12,cc:4,xic:185,pitada:0.4}, 'cafe':{cs:6,cc:2,xic:90,pitada:0.3},
+  'queijo':{cs:5,cc:1.5,xic:80,pitada:0.2}, 'gergelim':{cs:9,cc:3,xic:150,pitada:0.3}
+};
+const DENS_DEF = {cs:10,cc:3.3,xic:130,pitada:0.4};   // sólido genérico (não reconhecido)
+const VOL = {cs:15,cc:5,xic:240,pitada:0.5};          // líquidos (ml) — padrão universal
+const MED_LABEL = {g:'g',ml:'ml',un:'unidade',cs:'colher sopa rasa',meiacs:'½ colher sopa',csc:'colher sopa cheia',cc:'colher chá rasa',ccc:'colher chá cheia',xic:'xícara',meiaxic:'½ xícara',quartxic:'¼ xícara',pitada:'pitada'};
+function densFor(nome){ const n=norm(nome); for(const k in DENS){ if(n.includes(k)) return DENS[k]; } return DENS_DEF; }
+function usadaBase(med,q,grupoCompra,nome){
+  if(SIMPLES[med]){ const s=SIMPLES[med]; return s.g===grupoCompra?{base:q*s.f}:null; }
+  if(CASEIRA.includes(med)){
+    let baseMed=med, fator=1;
+    if(med==='csc'){ baseMed='cs'; fator=CHEIA; }    // colher de sopa cheia
+    if(med==='meiacs'){ baseMed='cs'; fator=0.5; }   // meia colher de sopa
+    if(med==='ccc'){ baseMed='cc'; fator=CHEIA; }    // colher de chá cheia
+    if(med==='meiaxic'){ baseMed='xic'; fator=0.5; } // meia xícara
+    if(med==='quartxic'){ baseMed='xic'; fator=0.25; } // um quarto de xícara
+    if(grupoCompra==='massa')  return {base:q*densFor(nome)[baseMed]*fator};
+    if(grupoCompra==='volume') return {base:q*VOL[baseMed]*fator};
+    return null;
+  }
+  return null;
+}
+
+function rowTemplate(d={}){
+  const buyU=d.buyU||'kg', useM=d.useM||'g';
+  const opt=(o,sel)=>`<option value="${o}"${o===sel?' selected':''}>${MED_LABEL[o]||o}</option>`;
+  const div=document.createElement('div'); div.className='ing-row';
+  div.innerHTML=`
+    <div class="iname"><span class="m-tag">Ingrediente</span><input class="f-name" type="text" placeholder="Ex: Farinha de trigo" value="${d.name||''}"></div>
+    <div class="cell-buy"><span class="m-tag">Comprei</span>
+      <div class="qty-row"><input class="f-buy" type="text" inputmode="decimal" placeholder="1" value="${d.buy??''}">
+      <select class="f-buyU">${['g','kg','ml','L','un','dz'].map(o=>`<option value="${o}"${o===buyU?' selected':''}>${o}</option>`).join('')}</select></div></div>
+    <div class="cell-paid"><span class="m-tag">Pago R$</span><input class="f-paid" type="text" inputmode="decimal" placeholder="0,00" value="${d.paid??''}"></div>
+    <div class="cell-use"><span class="m-tag">Usei</span>
+      <div class="qty-row use"><input class="f-use" type="text" inputmode="decimal" placeholder="ex: 120" value="${d.use??''}">
+      <select class="f-useM">${['g','ml','un','cs','meiacs','csc','cc','ccc','xic','meiaxic','quartxic','pitada'].map(o=>opt(o,useM)).join('')}</select></div></div>
+    <div class="cost">R$ 0,00</div>
+    <button class="del" title="Remover" aria-label="Remover">✕</button>`;
+  div.querySelector('.del').onclick=()=>{div.remove();recalc();};
+  div.querySelectorAll('input,select').forEach(i=>i.addEventListener('input',recalc));
+  return div;
+}
+function addRow(d){ rows.appendChild(rowTemplate(d)); }
+
+function recalc(){
+  // 1) ingredientes
+  let ingTotal=0;
+  const ingList=[];
+  rows.querySelectorAll('.ing-row').forEach(r=>{
+    const name=r.querySelector('.f-name').value;
+    const buy=num(r.querySelector('.f-buy').value);
+    const buyU=r.querySelector('.f-buyU').value;
+    const paid=num(r.querySelector('.f-paid').value);
+    const use=num(r.querySelector('.f-use').value);
+    const useM=r.querySelector('.f-useM').value;
+    const cEl=r.querySelector('.cost'); cEl.classList.remove('bad'); cEl.removeAttribute('title');
+    const c=COMPRA[buyU], baseCompra=buy*c.f, u=usadaBase(useM,use,c.g,name);
+    if(u===null && use>0){ cEl.textContent='—'; cEl.classList.add('bad');
+      cEl.title=`Não dá pra medir algo comprado em "${buyU}" usando ${MED_LABEL[useM]}. Use a mesma natureza (peso, volume ou unidade).`;
+      ingList.push({name,paid,buy,buyU,baseCompra,baseUsada:0,compativel:false}); return; }
+    const cost = (baseCompra>0 && u) ? (paid/baseCompra)*u.base : 0;
+    cEl.textContent=BRL(cost); ingTotal+=cost;
+    ingList.push({name,paid,buy,buyU,baseCompra,baseUsada:u?u.base:0,compativel:true});
+  });
+
+  // 2) rendimento total -> potes (cada pote leva X); o que não completa um pote vira sobra
+  const totalRende = num($('p-total').value);
+  const cadaPote   = num($('p-cada').value);
+  const unit       = $('p-unit').value;
+  const embUnit    = num($('p-emb').value);
+  const potesCheios = cadaPote>0 ? Math.floor(totalRende/cadaPote) : 0;
+  const sobra = cadaPote>0 ? +(totalRende - potesCheios*cadaPote).toFixed(2) : 0;
+  const custoEmb = potesCheios*embUnit;
+  $('emb-readout').innerHTML = (totalRende>0 && cadaPote>0)
+    ? `Rende <b>${NUMfmt(totalRende)} ${unit}</b> · cada pote leva <b>${NUMfmt(cadaPote)} ${unit}</b> → <b>${NUMfmt(potesCheios)}</b> pote(s) cheio(s)`
+      + (sobra>0?` · <b>sobra ${NUMfmt(sobra)} ${unit}</b>`:` · sem sobra`)
+      + ` · embalagem ${NUMfmt(potesCheios)} × ${BRL(embUnit)} = <b>${BRL(custoEmb)}</b>`
+    : 'Preencha o rendimento e quanto cada pote leva.';
+
+  // 3) gás e luz (% sobre o valor dos ingredientes) + outros R$
+  const gasPct=num($('c-gas').value), luzPct=num($('c-luz').value);
+  const gasVal=ingTotal*gasPct/100, luzVal=ingTotal*luzPct/100;
+  const outros=num($('c-out').value);
+
+  const custoTotal = ingTotal + gasVal + luzVal + custoEmb + outros;
+
+  // 4) serviço e lucro
+  const servPct=num($('c-serv').value), lucroPct=num($('c-lucro').value);
+  const servVal=custoTotal*servPct/100, comServ=custoTotal+servVal;
+  const lucroVal=comServ*lucroPct/100, vendaTotal=comServ+lucroVal;
+
+  // ---- cenários da sobra ----
+  const fracSobra = totalRende>0 ? sobra/totalRende : 0;
+  const valorSobra = vendaTotal * fracSobra;   // valor de venda proporcional da sobra
+  const custoSobra = custoTotal * fracSobra;   // custo proporcional da sobra
+  const potesDiv = potesCheios>0 ? potesCheios : 1;
+
+  const potePropor = (totalRende>0 && cadaPote>0) ? vendaTotal*(cadaPote/totalRende) : vendaTotal/potesDiv; // pote vale a fatia dele
+  const poteBonus  = vendaTotal / potesDiv;     // potes cheios cobrem tudo (sobra grátis)
+
+  // lucro em cada cenário
+  const lucroBonus    = vendaTotal - custoTotal;                       // vende potes cheios a poteBonus
+  const lucroMenor    = (potesCheios*potePropor + valorSobra) - custoTotal; // potes proporcionais + pote menor
+  const lucroPrejuizo = (potesCheios*potePropor) - custoTotal;         // potes proporcionais, sobra jogada fora
+
+  // opção escolhida define o destaque
+  const sel = $('p-sobra').value;
+  let headPote, finalLucro, vendaExtra='';
+  if(sobra<=0 || !(totalRende>0&&cadaPote>0)){
+    headPote=poteBonus; finalLucro=lucroBonus;
+  } else if(sel==='menor'){
+    headPote=potePropor; finalLucro=lucroMenor;
+    vendaExtra=` · + pote menor ${BRL(valorSobra)} (${NUMfmt(sobra)} ${unit})`;
+  } else if(sel==='prejuizo'){
+    headPote=potePropor; finalLucro=lucroPrejuizo;
+    vendaExtra=` · prejuízo ${BRL(valorSobra)} (${NUMfmt(sobra)} ${unit})`;
+  } else {
+    headPote=poteBonus; finalLucro=lucroBonus;
+    vendaExtra=` · sobra ${NUMfmt(sobra)} ${unit} de bônus`;
+  }
+  const custoPorPote = custoTotal / potesDiv;
+  const vendaPorUn   = cadaPote>0 ? headPote/cadaPote : (totalRende>0?vendaTotal/totalRende:vendaTotal);
+
+  // 5) preencher recibo
+  const pct = p => p>0 ? `(${NUMfmt(p)}%)` : '';
+  $('o-ing').textContent=BRL(ingTotal);
+  $('o-gas-pct').textContent=pct(gasPct); $('o-gas').textContent=BRL(gasVal);
+  $('o-luz-pct').textContent=pct(luzPct); $('o-luz').textContent=BRL(luzVal);
+  $('o-emb-det').textContent = potesCheios>0 ? `(${NUMfmt(potesCheios)} × ${BRL(embUnit)})` : '';
+  $('o-emb').textContent=BRL(custoEmb);
+  $('o-out').textContent=BRL(outros);
+  $('o-total').textContent=BRL(custoTotal);
+  $('o-cpote-det').textContent = potesCheios>0 ? `(÷ ${NUMfmt(potesCheios)} potes)` : '';
+  $('o-cpote').textContent=BRL(custoPorPote);
+  $('o-serv-pct').textContent=pct(servPct); $('o-serv').textContent='+ '+BRL(servVal);
+  $('o-lucro-pct').textContent=pct(lucroPct); $('o-lucro').textContent='+ '+BRL(lucroVal);
+  $('o-perpote').textContent=BRL(headPote);
+  $('o-venda-line').innerHTML = `Total da receita ${BRL(vendaTotal)}<br>${BRL(vendaPorUn)} por ${unit} · ${NUMfmt(potesCheios)} pote(s) cheio(s)${vendaExtra}`;
+  $('o-profit').textContent=BRL(finalLucro);
+
+  // comparativo de cenários
+  const cb=$('cenarios-body');
+  if(sobra>0 && totalRende>0 && cadaPote>0){
+    const tag=ok=>ok?'<span class="tag">escolhido</span>':'';
+    cb.innerHTML=
+      `<div class="scn ${sel==='bonus'?'sel':''}"><div class="sl">🎁 Sobra de bônus ${tag(sel==='bonus')}<small>${NUMfmt(potesCheios)} potes a ${BRL(poteBonus)} · sobra grátis</small></div>
+        <div class="sv">${BRL(lucroBonus)}<small>lucro</small></div></div>
+      <div class="scn ${sel==='menor'?'sel':''}"><div class="sl">🫙 Pote menor proporcional ${tag(sel==='menor')}<small>${NUMfmt(potesCheios)} potes a ${BRL(potePropor)} + menor ${BRL(valorSobra)}</small></div>
+        <div class="sv">${BRL(lucroMenor)}<small>lucro</small></div></div>
+      <div class="scn ${sel==='prejuizo'?'sel':''}"><div class="sl">📉 Prejuízo (joga a sobra fora) ${tag(sel==='prejuizo')}<small>${NUMfmt(potesCheios)} potes a ${BRL(potePropor)} · perde ${BRL(valorSobra)}</small></div>
+        <div class="sv">${BRL(lucroPrejuizo)}<small>lucro</small></div></div>`;
+  } else {
+    cb.innerHTML=`<div class="scn"><div class="sl">Sem sobra ✨<small>Todos os ${NUMfmt(potesCheios)} potes ficam cheios.</small></div><div class="sv">${BRL(lucroBonus)}<small>lucro</small></div></div>`;
+  }
+
+  // ENCOMENDA (lote sob medida) — escala a receita pela quantidade pedida
+  const custoProducao = ingTotal + gasVal + luzVal + outros; // por receita, sem embalagem
+  const encPotes = num($('enc-potes').value);
+  const encBisc  = num($('enc-bisc').value) || (cadaPote>0?cadaPote:1);
+  const encLucroPct = $('enc-lucro').value.trim()!=='' ? num($('enc-lucro').value) : lucroPct;
+  const encOut = $('enc-out');
+  if(encPotes>0 && totalRende>0 && custoTotal>0){
+    const totalBiscEnc = encPotes*encBisc;
+    const nReceitas = Math.ceil(totalBiscEnc/totalRende);   // só dá pra fazer receitas inteiras
+    const biscProduzidos = nReceitas*totalRende;
+    const sobraEnc = +(biscProduzidos - totalBiscEnc).toFixed(2);
+    const custoEmbEnc = encPotes*embUnit;
+    const custoProdEnc = custoProducao*nReceitas;
+    const custoEncTotal = custoProdEnc + custoEmbEnc;       // gasto real (receitas inteiras + embalagens)
+    const mult = (1+servPct/100)*(1+encLucroPct/100);
+    const fracSobraE = biscProduzidos>0 ? sobraEnc/biscProduzidos : 0;
+    const custoProdSobra = custoProdEnc*fracSobraE;         // custo da produção que sobra
+    const custoProdPedido = custoProdEnc - custoProdSobra;
+
+    let vendaEnc, lucroEncTot, modoTxt, modoNome;
+    if(sobraEnc<=0 || sel==='bonus'){
+      modoNome='bônus';
+      vendaEnc = custoEncTotal*mult;                        // cliente cobre toda a produção
+      lucroEncTot = vendaEnc - custoEncTotal;
+      modoTxt = sobraEnc>0 ? `sobram ${NUMfmt(sobraEnc)} de bônus (cliente cobre a produção)` : 'sem sobra';
+    } else if(sel==='menor'){
+      modoNome='pote menor';
+      vendaEnc = (custoProdPedido+custoEmbEnc)*mult;        // cliente paga só o pedido
+      const vendaSobra = custoProdSobra*mult;              // sobra vendida à parte
+      lucroEncTot = (vendaEnc + vendaSobra) - custoEncTotal;
+      modoTxt = `sobram ${NUMfmt(sobraEnc)} p/ vender à parte ≈ ${BRL(vendaSobra)}`;
+    } else { // prejuizo
+      modoNome='prejuízo';
+      vendaEnc = (custoProdPedido+custoEmbEnc)*mult;        // cliente paga só o pedido
+      lucroEncTot = vendaEnc - custoEncTotal;              // você absorve a produção que sobra
+      modoTxt = `prejuízo de ${BRL(custoProdSobra)} (${NUMfmt(sobraEnc)} biscoitos perdidos)`;
+    }
+    const potPreco = vendaEnc/encPotes;
+    const unPreco  = vendaEnc/totalBiscEnc;
+
+    encOut.innerHTML =
+      `<div class="enc-big"><span>Cobrar pela encomenda<br>de ${NUMfmt(encPotes)} potes</span><b>${BRL(vendaEnc)}</b></div>
+       <div class="enc-rows">
+         <div><small>Por pote</small><b>${BRL(potPreco)}</b></div>
+         <div><small>Por unidade</small><b>${BRL(unPreco)}</b></div>
+         <div><small>Seu lucro</small><b>${BRL(lucroEncTot)}</b></div>
+       </div>
+       <div class="enc-note">${NUMfmt(encPotes)} potes × ${NUMfmt(encBisc)} = <b>${NUMfmt(totalBiscEnc)} biscoitos</b> · <b>${NUMfmt(nReceitas)} receita(s) inteira(s)</b> → produz ${NUMfmt(biscProduzidos)} · sobra: ${modoTxt} · modo <b>${modoNome}</b> · custo ${BRL(custoEncTotal)} · lucro ${NUMfmt(encLucroPct)}%</div>`;
+  } else {
+    encOut.innerHTML = `<div class="readout">Preencha os potes encomendados (e a receita acima) para ver o preço do lote.</div>`;
+  }
+
+  // RENDIMENTO DA COMPRA — estado editável de pacotes (estoque)
+  lastIngList = ingList;
+  lastCtx = {totalRende, cadaPote, unit, headPote};
+  renderCompra();
+
+  const name=$('rname').value.trim();
+  $('r-title').textContent=name||'Resumo do custo';
+  $('r-sub').textContent = custoTotal>0
+    ? `Custo total R$ ${NUMfmt(custoTotal)} · ${NUMfmt(potesCheios)} pote(s) cheio(s) · R$ ${NUMfmt(custoPorPote)} por pote`
+    : 'Preencha os ingredientes acima';
+}
+
+/* ---- RENDIMENTO DA COMPRA / ESTOQUE EDITÁVEL ---- */
+function renderCompra(){
+  const body=$('compra-body'); const ingList=lastIngList;
+  const usaveis=ingList.filter(x=>x.baseUsada>0 && x.compativel && x.baseCompra>0);
+  if(!(usaveis.length && lastCtx.totalRende>0)){
+    body.innerHTML=`<div class="readout">Preencha os ingredientes (comprado, pago e usado) e o rendimento da receita para ver quanto cada pacote rende.</div>`;
+    compraSig=''; return;
+  }
+  const sig=ingList.map(x=>(x.name||'')+'|'+x.buyU).join('§')+'×'+ingList.length;
+  if(sig!==compraSig){
+    compraSig=sig;
+    body.innerHTML=`<div id="compra-rows"></div><div id="compra-sum" style="margin-top:10px"></div>`;
+    const rowsEl=$('compra-rows');
+    ingList.forEach((x,i)=>{
+      const div=document.createElement('div'); div.className='scn';
+      div.innerHTML=`<div class="sl" style="flex:1">${x.name||'(ingrediente)'} <span class="tag" id="cmp-tag-${i}" style="display:none">limita</span><small id="cmp-info-${i}"></small></div>
+        <div style="display:flex;align-items:center;gap:7px;flex:0 0 auto">
+          <input class="cmp-pac" data-i="${i}" type="text" inputmode="decimal" value="${compraPacotes[i]??1}" aria-label="pacotes" style="width:58px;text-align:center;padding:9px 4px">
+          <span style="font-size:.72rem;color:var(--ink-soft);line-height:1.25;white-space:nowrap">pacote(s)<br>× ${BRL(x.paid)}</span>
+        </div>`;
+      rowsEl.appendChild(div);
+    });
+    rowsEl.querySelectorAll('.cmp-pac').forEach(inp=>{
+      inp.addEventListener('input',()=>{ compraPacotes[inp.dataset.i]=inp.value; updateCompraNumbers(); });
+    });
+  }
+  updateCompraNumbers();
+}
+
+function updateCompraNumbers(){
+  const ingList=lastIngList; const {totalRende, cadaPote, unit, headPote}=lastCtx;
+  const potesPorRec = cadaPote>0 ? Math.floor(totalRende/cadaPote) : 0;
+  let minRec=Infinity, limIdx=-1, limNome='';
+  ingList.forEach((x,i)=>{
+    if(x.baseUsada>0 && x.compativel && x.baseCompra>0){
+      const pac=num(compraPacotes[i]??1);
+      const rec=(pac*x.baseCompra)/x.baseUsada;
+      if(rec<minRec){ minRec=rec; limIdx=i; limNome=x.name||'(ingrediente)'; }
+    }
+  });
+  const maxReceitas = isFinite(minRec)?Math.floor(minRec):0;
+  ingList.forEach((x,i)=>{
+    const info=$('cmp-info-'+i), tag=$('cmp-tag-'+i); if(!info) return;
+    if(x.baseUsada>0 && x.compativel && x.baseCompra>0){
+      const pac=num(compraPacotes[i]??1), grupo=COMPRA[x.buyU].g;
+      const estoque=pac*x.baseCompra, rec=estoque/x.baseUsada;
+      const sobraIng=Math.max(0, estoque - maxReceitas*x.baseUsada);
+      info.innerHTML=` rende ${NUMfmt(+rec.toFixed(1))} receita(s)${potesPorRec?` ≈ ${NUMfmt(Math.floor(rec*potesPorRec))} potes`:''} · estoque ${fmtBase(estoque,grupo)} · sobra <b>${fmtBase(sobraIng,grupo)}</b>`;
+      if(tag) tag.style.display=(i===limIdx)?'inline-block':'none';
+    } else {
+      info.textContent = x.compativel?' sem quantidade usada':' medida incompatível';
+      if(tag) tag.style.display='none';
+    }
+  });
+  const biscProd=maxReceitas*totalRende;
+  const potesC=cadaPote>0?Math.floor(biscProd/cadaPote):0;
+  const custoPacotes=ingList.reduce((s,x,i)=>s+num(compraPacotes[i]??1)*x.paid,0);
+  const fatur=potesC*headPote, lucroCompra=fatur-custoPacotes;
+  const sum=$('compra-sum'); if(!sum) return;
+  sum.innerHTML=
+    `<div class="enc-big"><span>Com o seu estoque você faz<br>${NUMfmt(maxReceitas)} receita(s) completa(s)</span><b>${NUMfmt(potesC)} potes</b></div>
+     <div class="enc-rows">
+       <div><small>Custo da compra</small><b>${BRL(custoPacotes)}</b></div>
+       <div><small>Faturamento</small><b>${BRL(fatur)}</b></div>
+       <div><small>Lucro</small><b>${BRL(lucroCompra)}</b></div>
+     </div>
+     <div class="enc-note">Limitado por <b>${limNome}</b> · ${NUMfmt(maxReceitas)} receita(s) → ${NUMfmt(biscProd)} ${unit} → ${NUMfmt(potesC)} potes · vendendo a ${BRL(headPote)}/pote · edite os pacotes pra simular sua compra</div>`;
+}
+
+/* SALVAR */
+const KEY='precifica_receitas_v3';
+let store={}; try{ store=JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ store={}; }
+function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(store)); }catch(e){} }
+function snapshot(){
+  return { rname:$('rname').value,
+    pack:{total:$('p-total').value, cada:$('p-cada').value, unit:$('p-unit').value, emb:$('p-emb').value, sobra:$('p-sobra').value},
+    ops:{gas:$('c-gas').value,luz:$('c-luz').value,out:$('c-out').value,serv:$('c-serv').value,lucro:$('c-lucro').value},
+    enc:{potes:$('enc-potes').value, bisc:$('enc-bisc').value, lucro:$('enc-lucro').value},
+    compraPacotes:{...compraPacotes},
+    ings:[...rows.querySelectorAll('.ing-row')].map(r=>({
+      name:r.querySelector('.f-name').value, buy:r.querySelector('.f-buy').value, buyU:r.querySelector('.f-buyU').value,
+      paid:r.querySelector('.f-paid').value, use:r.querySelector('.f-use').value, useM:r.querySelector('.f-useM').value }))};
+}
+function loadSnapshot(s){
+  $('rname').value=s.rname||'';
+  const p=s.pack||{}; $('p-total').value=p.total||''; $('p-cada').value=p.cada||''; $('p-unit').value=p.unit||'biscoitos'; $('p-emb').value=p.emb||''; $('p-sobra').value=p.sobra||'bonus';
+  const o=s.ops||{}; $('c-gas').value=o.gas||''; $('c-luz').value=o.luz||''; $('c-out').value=o.out||'';
+  $('c-serv').value=o.serv||''; $('c-lucro').value=o.lucro||'';
+  const e=s.enc||{}; $('enc-potes').value=e.potes||''; $('enc-bisc').value=e.bisc||''; $('enc-lucro').value=e.lucro||'';
+  compraPacotes = s.compraPacotes ? {...s.compraPacotes} : {}; compraSig='';
+  rows.innerHTML=''; (s.ings&&s.ings.length?s.ings:[{}]).forEach(addRow); recalc();
+}
+function renderSaved(){
+  const list=$('savedList'); const keys=Object.keys(store);
+  if(!keys.length){ list.innerHTML='<span class="empty-note">Nenhuma receita salva ainda.</span>'; return; }
+  list.innerHTML='';
+  keys.forEach(k=>{
+    const c=document.createElement('span'); c.className='chip';
+    c.innerHTML=`<span class="load">📂 ${k}</span><button title="Apagar">✕</button>`;
+    c.querySelector('.load').onclick=()=>{ loadSnapshot(store[k]); $('saveName').value=k; window.scrollTo({top:0,behavior:'smooth'}); };
+    c.querySelector('button').onclick=()=>{ if(confirm(`Apagar "${k}"?`)){ delete store[k]; persist(); renderSaved(); } };
+    list.appendChild(c);
+  });
+}
+$('saveBtn').onclick=()=>{ const name=$('saveName').value.trim()||$('rname').value.trim();
+  if(!name){ alert('Dê um nome para salvar a receita.'); return; } store[name]=snapshot(); persist(); renderSaved(); $('saveName').value=name; };
+$('clearBtn').onclick=()=>{ if(!confirm('Limpar todos os campos? (suas receitas salvas continuam)')) return; loadSnapshot({ings:[{}]}); $('saveName').value=''; };
+
+function baixarArquivo(texto, nome){
+  const blob=new Blob([texto],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=nome; document.body.appendChild(a); a.click();
+  a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+$('exportBtn').onclick=()=>{
+  let data={...store};
+  // se nada salvo ainda, exporta a receita atual
+  if(Object.keys(data).length===0){ data[$('rname').value.trim()||'Receita']=snapshot(); }
+  baixarArquivo(JSON.stringify(data,null,2), 'minhas-receitas.json');
+};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=ev=>{
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(data && typeof data==='object' && !Array.isArray(data)){
+        const n=Object.keys(data).length;
+        Object.assign(store,data); persist(); renderSaved();
+        alert(n+' receita(s) importada(s) com sucesso!');
+      } else alert('Arquivo JSON inválido.');
+    }catch(e){ alert('Não consegui ler o arquivo. Verifique se é um JSON válido.'); }
+    ev.target.value='';
+  };
+  reader.readAsText(file);
+};
+$('addRow').onclick=()=>{ addRow(); };
+['rname','p-total','p-cada','p-unit','p-emb','p-sobra','c-gas','c-luz','c-out','c-serv','c-lucro','enc-potes','enc-bisc','enc-lucro'].forEach(id=>$(id).addEventListener('input',recalc));
+
+/* exemplo demonstrando rendimento + sobra + medidas */
+addRow({name:'Farinha de trigo', buy:1, buyU:'kg', paid:6, use:3, useM:'xic'});
+addRow({name:'Açúcar', buy:1, buyU:'kg', paid:5, use:1, useM:'xic'});
+addRow({name:'Manteiga', buy:500, buyU:'g', paid:12, use:8, useM:'cs'});
+addRow({name:'Ovos', buy:12, buyU:'un', paid:20, use:2, useM:'un'});
+$('p-total').value='75'; $('p-cada').value='12'; $('p-emb').value='2,50';
+$('c-gas').value='5'; $('c-luz').value='3'; $('c-lucro').value='100';
+recalc(); renderSaved();
+</script>
+</body>
+</html>
