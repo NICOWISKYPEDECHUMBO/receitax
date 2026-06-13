@@ -602,7 +602,8 @@ function estoqueDe(i,x){ return (compraEstoque[i]!=null) ? compraEstoque[i] : x.
 function aplicarEstoque(i, sign){
   const x=lastIngList[i]; if(!x) return;
   const amtInp=document.querySelector('.cmp-amt[data-i="'+i+'"]');
-  const unit=compraUsadoUnit[i] ?? baseUnitLabel(COMPRA[x.buyU].g);
+  const uSel=document.querySelector('.cmp-amt-u[data-i="'+i+'"]');
+  const unit=(uSel&&uSel.value)||baseUnitLabel(COMPRA[x.buyU].g);
   const fat=COMPRA[unit]?COMPRA[unit].f:1;
   const amt=num(amtInp?amtInp.value:0)*fat;
   if(amt>0){
@@ -635,14 +636,11 @@ function renderCompra(){
         (usable?`<div class="cmp-actions">
           <input class="cmp-amt" data-i="${i}" type="text" inputmode="decimal" placeholder="quantidade">
           <select class="cmp-amt-u" data-i="${i}">${unitOpts.map(o=>`<option value="${o}"${o===defU?' selected':''}>${o}</option>`).join('')}</select>
-          <button class="mini-btn add" data-i="${i}">+ comprei</button>
-          <button class="mini-btn sub" data-i="${i}">− usei</button>
+          <button type="button" class="mini-btn add" data-i="${i}">+ comprei</button>
+          <button type="button" class="mini-btn sub" data-i="${i}">− usei</button>
         </div>`:'');
       rowsEl.appendChild(div);
     });
-    rowsEl.querySelectorAll('.cmp-amt-u').forEach(sel=>sel.addEventListener('input',()=>{compraUsadoUnit[sel.dataset.i]=sel.value;}));
-    rowsEl.querySelectorAll('.mini-btn.add').forEach(b=>b.addEventListener('click',()=>aplicarEstoque(b.dataset.i,+1)));
-    rowsEl.querySelectorAll('.mini-btn.sub').forEach(b=>b.addEventListener('click',()=>aplicarEstoque(b.dataset.i,-1)));
   }
   updateCompraNumbers();
 }
@@ -698,14 +696,19 @@ function updateCompraNumbers(){
         const grupo=COMPRA[x.buyU].g;
         const disp=estoqueDe(i,x);
         const prec=recipesNeeded*x.baseUsada;
-        if(disp<prec-0.001) falta.push({nome:x.name||'(ingrediente)', faltam:prec-disp, grupo, tamPac:x.baseCompra});
+        if(disp<prec-0.001) falta.push({nome:x.name||'(ingrediente)', faltam:prec-disp, grupo, tamPac:x.baseCompra, paid:x.paid});
       }
     });
     if(falta.length===0){
       wantOut.innerHTML=`<div class="ok-box">✅ Dá pra fazer! <b>${NUMfmt(wantPotes)}</b> potes × <b>${NUMfmt(wantBisc)}</b> = <b>${NUMfmt(biscNeeded)}</b> biscoitos · precisa de <b>${NUMfmt(recipesNeeded)}</b> receita(s) e seu estoque cobre.</div>`;
     } else {
-      const lista=falta.map(f=>`${f.nome}: faltam <b>${fmtBase(f.faltam,f.grupo)}</b>${f.tamPac>0?` (~${NUMfmt(Math.ceil(f.faltam/f.tamPac))} pacote(s))`:''}`).join(' · ');
-      wantOut.innerHTML=`<div class="warn-box">⚠️ Falta estoque pra <b>${NUMfmt(wantPotes)}</b> potes × <b>${NUMfmt(wantBisc)}</b> (${NUMfmt(biscNeeded)} biscoitos · ${NUMfmt(recipesNeeded)} receitas):<br>${lista}</div>`;
+      let custoTotalFalta=0;
+      const lista=falta.map(f=>{
+        const pac=f.tamPac>0?Math.ceil(f.faltam/f.tamPac):0;
+        const custo=pac*f.paid; custoTotalFalta+=custo;
+        return `${f.nome}: faltam <b>${fmtBase(f.faltam,f.grupo)}</b>${pac>0?` → comprar <b>${NUMfmt(pac)}</b> pacote(s) ≈ <b>${BRL(custo)}</b>`:''}`;
+      }).join('<br>');
+      wantOut.innerHTML=`<div class="warn-box">⚠️ Falta estoque pra <b>${NUMfmt(wantPotes)}</b> potes × <b>${NUMfmt(wantBisc)}</b> (${NUMfmt(biscNeeded)} biscoitos · ${NUMfmt(recipesNeeded)} receitas):<br>${lista}<br><br>💰 Pra completar você gasta <b>${BRL(custoTotalFalta)}</b> em compras.</div>`;
     }
   } else {
     wantOut.innerHTML='';
@@ -805,6 +808,7 @@ $('importFile').onchange=ev=>{
 };
 $('addRow').onclick=()=>{ addRow(); };
 ['rname','p-total','p-cada','p-unit','p-emb','p-sobra','c-gas','c-luz','c-out','c-serv','c-lucro','enc-potes','enc-bisc','enc-lucro','cmp-want-potes','cmp-want-bisc'].forEach(id=>$(id).addEventListener('input',recalc));
+$('compra').addEventListener('click', e=>{ const b=e.target.closest('.mini-btn'); if(!b) return; aplicarEstoque(b.dataset.i, b.classList.contains('add')?1:-1); });
 
 /* exemplo demonstrando rendimento + sobra + medidas */
 addRow({name:'Farinha de trigo', buy:1, buyU:'kg', paid:6, use:3, useM:'xic'});
